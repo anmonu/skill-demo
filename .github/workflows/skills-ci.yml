@@ -1,0 +1,33 @@
+name: Skills validation and packaging
+on:
+  push:
+    branches: [main, 'demo/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-scan-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test governance gates
+        run: python -m unittest discover -s tests -v
+      - name: Validate manifests, scan instructions, build packages
+        run: python scripts/pipeline.py
+      - name: Upload scan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-scan-evidence
+          path: build/scan-report.json
+          if-no-files-found: warn
+      - name: Upload checked packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: checked-skill-packages
+          path: build/*.zip
+          if-no-files-found: error
